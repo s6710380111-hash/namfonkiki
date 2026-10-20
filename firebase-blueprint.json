@@ -1,0 +1,132 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "moderator", "member"] },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "bio": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email", "displayName", "role", "status"]
+    },
+    "Resource": {
+      "title": "Resource",
+      "description": "Educational resource item shared by members",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 3000 },
+        "category": { "type": "string", "maxLength": 100 },
+        "gradeLevel": { "type": "string", "maxLength": 50 },
+        "mediaType": { "type": "string", "enum": ["pdf", "video", "website", "document", "image"] },
+        "fileUrl": { "type": "string", "maxLength": 2000 },
+        "fileName": { "type": "string", "maxLength": 255 },
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string", "maxLength": 100 },
+        "authorEmail": { "type": "string" },
+        "viewCount": { "type": "number" },
+        "favoriteCount": { "type": "number" },
+        "status": { "type": "string", "enum": ["published", "hidden", "deleted"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["title", "description", "category", "gradeLevel", "mediaType", "fileUrl", "authorId", "status"]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "Bookmark reference saved by an individual user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "resourceId": { "type": "string" },
+        "resourceTitle": { "type": "string", "maxLength": 200 },
+        "resourceCategory": { "type": "string" },
+        "resourceMediaType": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "resourceId"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Report filed against a resource for inappropriate or broken content",
+      "type": "object",
+      "properties": {
+        "resourceId": { "type": "string" },
+        "resourceTitle": { "type": "string", "maxLength": 200 },
+        "reporterId": { "type": "string" },
+        "reporterEmail": { "type": "string" },
+        "reason": { "type": "string", "enum": ["broken_link", "copyright", "inappropriate", "inaccurate", "other"] },
+        "details": { "type": "string", "maxLength": 1000 },
+        "status": { "type": "string", "enum": ["pending", "resolved", "dismissed"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["resourceId", "reporterId", "reason", "status"]
+    },
+    "ModerationLog": {
+      "title": "ModerationLog",
+      "description": "Audit log for moderator and admin actions",
+      "type": "object",
+      "properties": {
+        "action": { "type": "string" },
+        "targetId": { "type": "string" },
+        "targetType": { "type": "string", "enum": ["resource", "user", "report", "setting"] },
+        "moderatorId": { "type": "string" },
+        "moderatorEmail": { "type": "string" },
+        "reason": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["action", "targetId", "targetType", "moderatorId"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Global website configuration",
+      "type": "object",
+      "properties": {
+        "siteName": { "type": "string", "maxLength": 100 },
+        "siteDescription": { "type": "string", "maxLength": 500 },
+        "announcement": { "type": "string", "maxLength": 1000 },
+        "allowRegistration": { "type": "string" },
+        "categories": { "type": "string" },
+        "updatedBy": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["siteName"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles keyed by auth UID"
+    },
+    "/resources/{resourceId}": {
+      "schema": "Resource",
+      "description": "All educational knowledge media and documents"
+    },
+    "/favorites/{favoriteId}": {
+      "schema": "Favorite",
+      "description": "Saved bookmarks with composite ID userId_resourceId"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Reports submitted by users against resources"
+    },
+    "/moderationLogs/{logId}": {
+      "schema": "ModerationLog",
+      "description": "Audit records of administrative actions"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "Site-wide configuration documents"
+    }
+  }
+}

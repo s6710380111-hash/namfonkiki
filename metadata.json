@@ -1,0 +1,6 @@
+{
+  "name": "EduShare Hub - คลังแบ่งปันความรู้เพื่อการเรียนรู้",
+  "description": "แพลตฟอร์มรวบรวมและแบ่งปันความรู้สำหรับนักเรียน นักศึกษา และคุณครู รองรับการค้นหา สื่อการสอน บันทึกรายการโปรด และระบบจัดการเนื้อหา",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 's6710380111@pkru.ac.th'
+      );
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSuperAdmin() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == 'admin' &&
+        getUserData().status != 'suspended'
+      );
+    }
+
+    function isModerator() {
+      return isAdmin() || (
+        isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        (getUserData().role == 'moderator' || getUserData().role == 'admin') &&
+        getUserData().status != 'suspended'
+      );
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Connection test document
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      
+      allow create: if isOwner(userId) && (
+        incoming().role == 'member' || 
+        (incoming().role == 'admin' && isSuperAdmin())
+      ) && incoming().status == 'active';
+      
+      allow update: if (
+        isAdmin() || 
+        (isOwner(userId) && 
+         incoming().role == existing().role && 
+         incoming().status == existing().status)
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Resources Collection
+    match /resources/{resourceId} {
+      allow read: if resource == null || 
+                     resource.data.status == 'published' || 
+                     (isSignedIn() && (resource.data.authorId == request.auth.uid || isModerator()));
+
+      allow create: if isSignedIn() && 
+                       incoming().authorId == request.auth.uid &&
+                       incoming().title is string && incoming().title.size() <= 200 &&
+                       incoming().description is string && incoming().description.size() <= 10000 &&
+                       incoming().status in ['published', 'hidden'];
+
+      allow update: if isSignedIn() && (
+        isAdmin() || 
+        isModerator() || 
+        (existing().authorId == request.auth.uid && incoming().authorId == existing().authorId)
+      );
+
+      allow delete: if isSignedIn() && (existing().authorId == request.auth.uid || isAdmin());
+    }
+
+    // Favorites Collection
+    match /favorites/{favoriteId} {
+      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && 
+                       incoming().userId == request.auth.uid;
+      
+      allow update: if isSignedIn() && 
+                       existing().userId == request.auth.uid && 
+                       incoming().userId == request.auth.uid;
+      
+      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    // Reports Collection
+    match /reports/{reportId} {
+      allow read: if isModerator();
+      
+      allow create: if isSignedIn() && 
+                       incoming().reporterId == request.auth.uid &&
+                       incoming().reason in ['broken_link', 'copyright', 'inappropriate', 'inaccurate', 'other'];
+      
+      allow update: if isModerator();
+      
+      allow delete: if isAdmin();
+    }
+
+    // Moderation Logs Collection
+    match /moderationLogs/{logId} {
+      allow read: if isModerator();
+      allow create: if isModerator() && incoming().moderatorId == request.auth.uid;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Settings Collection
+    match /settings/{settingId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+  }
+}
